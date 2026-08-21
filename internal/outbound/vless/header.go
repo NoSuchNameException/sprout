@@ -1,4 +1,4 @@
-package xray
+package vless
 
 import (
 	"encoding/binary"
@@ -14,7 +14,6 @@ import (
 
 // writeVLESSHeader writes a VLESS request header to conn.
 // Must be called after TLS handshake, before proxying data.
-// func writeVLESSHeader(conn net.Conn, uuid [16]byte, target string) error {
 func writeVLESSHeader(stream grpc.ClientStream, uuid [16]byte, target string) error {
 	host, portStr, err := net.SplitHostPort(target)
 	if err != nil {

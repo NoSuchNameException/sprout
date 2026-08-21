@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/NoSuchMailException/xray-client/internal/inbound"
-	"github.com/NoSuchMailException/xray-client/internal/outbound"
+	"github.com/NoSuchNameException/sprout/internal/inbound"
+	"github.com/NoSuchNameException/sprout/internal/outbound"
 )
 
 // Relay bridges an inbound listener and an outbound dialer.

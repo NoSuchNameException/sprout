@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/NoSuchMailException/xray-client/internal/inbound"
+	"github.com/NoSuchNameException/sprout/internal/inbound"
 )
 
 var _ inbound.Inbound = (*Server)(nil)

@@ -1,4 +1,4 @@
-module github.com/NoSuchMailException/xray-client
+module github.com/NoSuchNameException/sprout
 
 go 1.26.2
 

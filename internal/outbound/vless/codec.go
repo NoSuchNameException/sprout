@@ -1,4 +1,4 @@
-package xray
+package vless
 
 import (
 	"fmt"
@@ -51,7 +51,6 @@ func (vlessCodec) Unmarshal(data []byte, v any) error {
 		return fmt.Errorf("vlessCodec: truncated frame")
 	}
 
-	// Отдаем наружу чистые VLESS байты
 	*ptr = append((*ptr)[:0], data[start:end]...)
 	return nil
 }

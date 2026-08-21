@@ -1,4 +1,4 @@
-package xray
+package vless
 
 import (
 	"bytes"
@@ -14,8 +14,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/NoSuchMailException/xray-client/internal/config"
-	"github.com/NoSuchMailException/xray-client/internal/outbound"
+	"github.com/NoSuchNameException/sprout/internal/config"
+	"github.com/NoSuchNameException/sprout/internal/outbound"
 	utls "github.com/refraction-networking/utls"
 	"google.golang.org/grpc"
 )

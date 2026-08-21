@@ -10,11 +10,11 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/NoSuchMailException/xray-client/internal/config"
-	inboundPkg "github.com/NoSuchMailException/xray-client/internal/inbound"
-	"github.com/NoSuchMailException/xray-client/internal/inbound/socks5"
-	"github.com/NoSuchMailException/xray-client/internal/outbound/xray"
-	relayPkg "github.com/NoSuchMailException/xray-client/internal/relay"
+	"github.com/NoSuchNameException/sprout/internal/config"
+	inboundPkg "github.com/NoSuchNameException/sprout/internal/inbound"
+	"github.com/NoSuchNameException/sprout/internal/inbound/socks5"
+	core "github.com/NoSuchNameException/sprout/internal/outbound/vless"
+	relayPkg "github.com/NoSuchNameException/sprout/internal/relay"
 )
 
 var Version = "dev"
@@ -49,7 +49,7 @@ func main() {
 
 	address := fmt.Sprintf("%s:%d", cfg.Inbound.Listen, cfg.Inbound.Port)
 	inbound := socks5.NewServer(address)
-	outbound, err := xray.NewClient(cfg.Outbound)
+	outbound, err := core.NewClient(cfg.Outbound)
 	if err != nil {
 		slog.Error("failed to initialize client", "err", err)
 		os.Exit(1)

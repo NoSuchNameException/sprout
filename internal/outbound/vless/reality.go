@@ -1,4 +1,4 @@
-package xray
+package vless
 
 import (
 	"crypto/aes"
