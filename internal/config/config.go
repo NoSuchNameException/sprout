@@ -24,18 +24,20 @@ type InboundConfig struct {
 
 // OutboundConfig stores the remote VLESS/REALITY server connection details.
 type OutboundConfig struct {
-	Address         string `yaml:"address"`
-	Port            uint16 `yaml:"port"`
-	UUID            string `yaml:"uuid"`
-	PublicKey       string `yaml:"public_key"`
-	ShortID         string `yaml:"short_id"`
-	ServerName      string `yaml:"server_name"`
-	GRPCServiceName string `yaml:"grpc_service_name"`
-	Fingerprint     string `yaml:"fingerprint"`
-	Remark          string `yaml:"remark"`
+	Address     string `yaml:"address"`
+	Port        uint16 `yaml:"port"`
+	UUID        string `yaml:"uuid"`
+	PublicKey   string `yaml:"public_key"`
+	Security    string `yaml:"security"`
+	ShortID     string `yaml:"short_id"`
+	ServerName  string `yaml:"server_name"`
+	ServiceName string `yaml:"service_name"`
+	Type        string `yaml:"type"`
+	Fingerprint string `yaml:"fingerprint"`
+	Remark      string `yaml:"remark"`
 }
 
-var (
+const (
 	defaultListen = "127.0.0.1"
 	defaultPort   = uint16(1080)
 )
@@ -49,7 +51,7 @@ func InitConfig(path string) (*Config, error) {
 			fmt.Println("Config not found, creating a default one...")
 			cfg = &Config{}
 		} else {
-			return nil, fmt.Errorf("failed to load config: %w", err)
+			return nil, fmt.Errorf("load config: %w", err)
 		}
 	}
 
@@ -58,7 +60,7 @@ func InitConfig(path string) (*Config, error) {
 
 	if inboundChanged || outboundChanged {
 		if err := Save(path, cfg); err != nil {
-			return nil, fmt.Errorf("failed to update config: %w", err)
+			return nil, fmt.Errorf("update config: %w", err)
 		}
 		fmt.Println("Config saved to disk.")
 	}
@@ -118,17 +120,17 @@ func Load(path string) (*Config, error) {
 
 	cfg.Outbound.UUID, err = Decrypt(cfg.Outbound.UUID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt uuid: %w", err)
+		return nil, fmt.Errorf("decrypt uuid: %w", err)
 	}
 
 	cfg.Outbound.PublicKey, err = Decrypt(cfg.Outbound.PublicKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt public key: %w", err)
+		return nil, fmt.Errorf("decrypt public key: %w", err)
 	}
 
 	cfg.Outbound.ShortID, err = Decrypt(cfg.Outbound.ShortID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt short id: %w", err)
+		return nil, fmt.Errorf("decrypt short id: %w", err)
 	}
 
 	return &cfg, nil
@@ -142,17 +144,17 @@ func Save(path string, cfg *Config) error {
 	var err error
 	cfgToSave.Outbound.UUID, err = Encrypt(cfg.Outbound.UUID)
 	if err != nil {
-		return fmt.Errorf("failed to encrypt uuid: %w", err)
+		return fmt.Errorf("encrypt uuid: %w", err)
 	}
 
 	cfgToSave.Outbound.PublicKey, err = Encrypt(cfg.Outbound.PublicKey)
 	if err != nil {
-		return fmt.Errorf("failed to encrypt public key: %w", err)
+		return fmt.Errorf("encrypt public key: %w", err)
 	}
 
 	cfgToSave.Outbound.ShortID, err = Encrypt(cfg.Outbound.ShortID)
 	if err != nil {
-		return fmt.Errorf("failed to encrypt short id: %w", err)
+		return fmt.Errorf("encrypt short id: %w", err)
 	}
 
 	data, err := yaml.Marshal(cfgToSave)
@@ -160,6 +162,5 @@ func Save(path string, cfg *Config) error {
 		return fmt.Errorf("marshal yaml: %w", err)
 	}
 
-	// 0600 is perfect here (read/write for owner only) since it contains sensitive keys
 	return os.WriteFile(path, data, 0600)
 }

@@ -1,3 +1,4 @@
+// Package config provides configuration loading, parsing, and saving from a YAML file.
 package config
 
 import (
@@ -17,7 +18,7 @@ func CheckOrSetPort(listen string, defaultPort uint16) uint16 {
 		return defaultPort
 	}
 
-	fmt.Printf("Default port: %d is already in use\n", defaultPort)
+	fmt.Printf("Default port %d is already in use.\n", defaultPort)
 
 	reader := bufio.NewReader(os.Stdin)
 	for {
@@ -27,13 +28,13 @@ func CheckOrSetPort(listen string, defaultPort uint16) uint16 {
 
 		val, err := strconv.Atoi(input)
 		if err != nil || val < 1 || val > 65535 {
-			fmt.Println("Invalid port, enter 1 - 65535 number")
+			fmt.Println("Invalid port. Enter a number between 1 and 65535.")
 			continue
 		}
 
 		port := uint16(val)
 		if !isPortAvailable(listen, port) {
-			fmt.Println("The port is alredy in use. Enter a different port")
+			fmt.Println("The port is alredy in use. Enter a different port.")
 			continue
 		}
 
@@ -44,7 +45,8 @@ func CheckOrSetPort(listen string, defaultPort uint16) uint16 {
 // isPortAvailable attempts to start a temporary TCP listener on the specified
 // host and port to determine if it is currently free.
 func isPortAvailable(listen string, port uint16) bool {
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", listen, port))
+	addr := net.JoinHostPort(listen, strconv.Itoa(int(port)))
+	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return false
 	}
@@ -120,10 +122,12 @@ func parseVLESSToOutbound(input string, out *OutboundConfig) error {
 	}
 
 	out.PublicKey = q.Get("pbk")
+	out.Security = q.Get("security")
 	out.ShortID = q.Get("sid")
 	out.ServerName = q.Get("sni")
 	out.Fingerprint = q.Get("fp")
-	out.GRPCServiceName = q.Get("serviceName")
+	out.ServiceName = q.Get("serviceName")
+	out.Type = q.Get("type")
 	out.Remark = u.Fragment
 
 	return nil

@@ -56,8 +56,15 @@ Planned features include TCP-based connections and a TUN-based interface.
 3. Execution
 
     Run the client via the terminal by passing the required configuration parameters:
+
+    * **Standard run**
     ```
-    ./proxy-client-<os>-<arch> --help
+    ./proxy-client-<os>-<arch>
+    ```
+    
+    * **Debug run**
+    ```
+    ./proxy-client-<os>-<arch> -v
     ```
 
 ## Project Architecture

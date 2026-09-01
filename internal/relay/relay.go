@@ -1,9 +1,9 @@
-// Package relay connects inbound and outbound, proxying data between them.
+// Package relay connects inbound listeners and outbound dialers,
+// proxying bidirectional data between them.
 package relay
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"sync"
 
@@ -12,13 +12,13 @@ import (
 )
 
 // Relay bridges an inbound listener and an outbound dialer.
-// Each accepted Request is proxied to its target in a separate goroutine.
+// Each accepted [inbound.Request] is proxied to its target destination in a separate goroutine.
 type Relay struct {
 	Inbound  inbound.Inbound
 	Outbound outbound.Outbound
 }
 
-// NewRelay creates a new Relay with the given inbound and outbound.
+// NewRelay creates and initializes a new [Relay] with the provided inbound and outbound instances.
 func NewRelay(in inbound.Inbound, out outbound.Outbound) *Relay {
 	return &Relay{
 		Inbound:  in,
@@ -38,7 +38,11 @@ func (r *Relay) Run(ctx context.Context) error {
 
 		req, err := r.Inbound.Accept()
 		if err != nil {
-			return fmt.Errorf("inbound accept: %w", err)
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			slog.Error("[relay] failed to accept inbound connection", "err", err)
+			continue
 		}
 
 		slog.Debug("[relay] accepted request", "target", req.Target)
@@ -46,29 +50,49 @@ func (r *Relay) Run(ctx context.Context) error {
 	}
 }
 
-func (r *Relay) handle(ctx context.Context, req *inbound.Request) {
-	defer req.Conn.Close()
+// bufferPool reuses 32 KB byte buffers across connection goroutines to minimize heap allocations and GC overhead.
+var bufferPool = sync.Pool{
+	New: func() any {
+		b := make([]byte, 32*1024)
+		return &b
+	},
+}
 
-	stream, cleanup, err := r.Outbound.Connect(ctx, req.Target)
+// handle establishes an outbound connection for a given request and manages bidirectional data copy.
+func (r *Relay) handle(ctx context.Context, req *inbound.Request) {
+	conn, err := r.Outbound.Connect(ctx, req.Target)
 	if err != nil {
-		slog.Debug("[relay] outbound error", "err", err)
+		req.Conn.Close()
+		slog.Debug("[relay] outbound connection failed", "target", req.Target, "err", err)
 		return
 	}
-	defer cleanup()
+
+	var closeOnce sync.Once
+	closeAll := func() {
+		closeOnce.Do(func() {
+			req.Conn.Close()
+			conn.Close()
+		})
+	}
+	defer closeAll()
 
 	var wg sync.WaitGroup
 	wg.Add(2)
 
+	// Inbound -> Outbound
 	go func() {
 		defer wg.Done()
-		defer stream.CloseSend()
+		defer closeAll()
 
-		buf := make([]byte, 32*1024)
+		bufPtr := bufferPool.Get().(*[]byte)
+		defer bufferPool.Put(bufPtr)
+		buf := *bufPtr
 
 		for {
 			n, err := req.Conn.Read(buf)
 			if n > 0 {
-				if sendErr := stream.SendMsg(buf[:n]); sendErr != nil {
+				if _, sendErr := conn.Write(buf[:n]); sendErr != nil {
+					slog.Debug("[relay] write to outbound failed", "target", req.Target, "err", sendErr)
 					break
 				}
 			}
@@ -78,41 +102,55 @@ func (r *Relay) handle(ctx context.Context, req *inbound.Request) {
 		}
 	}()
 
+	// Outbound -> Inbound
 	go func() {
 		defer wg.Done()
-		defer req.Conn.Close()
+		defer closeAll()
+
+		bufPtr := bufferPool.Get().(*[]byte)
+		defer bufferPool.Put(bufPtr)
+		buf := *bufPtr
 
 		isFirstRecv := true
+		var headerBuf []byte
+
 		for {
-			var resp []byte
-			if err := stream.RecvMsg(&resp); err != nil {
-				break
-			}
+			n, err := conn.Read(buf)
+			if n > 0 {
+				data := buf[:n]
 
-			if isFirstRecv {
-				isFirstRecv = false
+				if isFirstRecv {
+					headerBuf = append(headerBuf, data...)
 
-				if len(resp) < 2 {
-					slog.Debug("vless response header too short")
-					break
+					if len(headerBuf) < 2 {
+						continue
+					}
+
+					addonLen := int(headerBuf[1])
+					headerLen := 2 + addonLen
+
+					if len(headerBuf) < headerLen {
+						continue
+					}
+
+					isFirstRecv = false
+					data = headerBuf[headerLen:]
+					headerBuf = nil
 				}
 
-				addonLen := int(resp[1])
-				headerLen := 2 + addonLen
-
-				if len(resp) < headerLen {
-					slog.Debug("vless response header truncated")
-					break
+				if len(data) > 0 {
+					if _, writeErr := req.Conn.Write(data); writeErr != nil {
+						slog.Debug("[relay] write to inbound failed", "target", req.Target, "err", writeErr)
+						break
+					}
 				}
-
-				resp = resp[headerLen:]
 			}
-
-			if _, err := req.Conn.Write(resp); err != nil {
+			if err != nil {
 				break
 			}
 		}
 	}()
 
 	wg.Wait()
+	slog.Debug("[relay] connection closed", "tartet", req.Target)
 }
