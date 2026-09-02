@@ -9,7 +9,7 @@ import (
 	"github.com/NoSuchNameException/sprout/internal/config"
 	"github.com/NoSuchNameException/sprout/internal/outbound"
 	"github.com/NoSuchNameException/sprout/internal/outbound/vless/dialer"
-	"github.com/NoSuchNameException/sprout/internal/transport/grpc"
+	"github.com/NoSuchNameException/sprout/internal/transport"
 )
 
 var _ outbound.Outbound = (*Client)(nil)
@@ -17,7 +17,7 @@ var _ outbound.Outbound = (*Client)(nil)
 // Client coordinates the underlying dialer (REALITY) and transport layer (gRPC) to manage VLESS connections.
 type Client struct {
 	dialer    outbound.Dialer
-	transport outbound.Transport
+	transport transport.Transport
 }
 
 // NewClient parses configuration options and constructs a fully initialized VLESS+REALITY [Client].
@@ -27,9 +27,14 @@ func NewClient(cfg config.OutboundConfig) (*Client, error) {
 		return nil, fmt.Errorf("parse outbound options: %w", err)
 	}
 
+	t, err := transport.Build(cfg.Type, opts)
+	if err != nil {
+		return nil, fmt.Errorf("trannsport build: %w", err)
+	}
+
 	return &Client{
 		dialer:    dialer.NewReality(opts),
-		transport: grpc.NewGRPCConn(opts),
+		transport: t,
 	}, nil
 }
 

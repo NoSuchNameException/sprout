@@ -18,9 +18,3 @@ type Dialer interface {
 	// Dial connects to the server and returns a base net.Conn (e.g., after REALITY/uTLS verification).
 	Dial(ctx context.Context) (net.Conn, error)
 }
-
-// Transport performs the high-level protocol handshake (e.g., VLESS over gRPC) over an established connection.
-type Transport interface {
-	// HandshakeAndWrap performs the protocol handshake over rawConn and wraps it into a multiplexed or proxied stream.
-	HandshakeAndWrap(ctx context.Context, conn net.Conn, target string) (io.ReadWriteCloser, error)
-}

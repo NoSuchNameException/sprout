@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"log/slog"
+	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/NoSuchNameException/sprout/internal/config"
@@ -47,7 +48,7 @@ func main() {
 		cancel()
 	}()
 
-	address := fmt.Sprintf("%s:%d", cfg.Inbound.Listen, cfg.Inbound.Port)
+	address := net.JoinHostPort(cfg.Inbound.Listen, strconv.Itoa(int(cfg.Inbound.Port)))
 	inbound := socks5.NewServer(address)
 	outbound, err := core.NewClient(cfg.Outbound)
 	if err != nil {

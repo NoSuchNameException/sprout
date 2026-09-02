@@ -1,4 +1,3 @@
-// Package config provides configuration loading, parsing, and saving from a YAML file.
 package config
 
 import (
@@ -7,12 +6,12 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-
-	"github.com/NoSuchNameException/sprout/internal/transport"
+	"strings"
 )
 
 const (
 	x25519PubKeyLen = 32
+	uuidLen         = 32
 )
 
 // OutboundOption holds parsed and validated parameters required to establish outbound connections.
@@ -41,7 +40,7 @@ func ParseOutboundOption(cfg OutboundConfig) (*OutboundOption, error) {
 		return nil, fmt.Errorf("invalid short id: %w", err)
 	}
 
-	uuidBytes, err := transport.ParseUUID(cfg.UUID)
+	uuidBytes, err := parseUUID(cfg.UUID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid uuid: %w", err)
 	}
@@ -56,4 +55,21 @@ func ParseOutboundOption(cfg OutboundConfig) (*OutboundOption, error) {
 		UUIDBytes:   uuidBytes,
 		Address:     address,
 	}, nil
+}
+
+// parseUUID parses a standard 36-character UUID string (with or without hyphens)
+// into a [16]byte array. Returns an error if the string is not a valid 128-bit hex representation.
+func parseUUID(uuid string) ([16]byte, error) {
+	var uuidBytes [16]byte
+	cleaned := strings.ReplaceAll(uuid, "-", "")
+
+	if len(cleaned) != uuidLen {
+		return uuidBytes, fmt.Errorf("parse uuid: invalid length %d (expected %d hex characters)", len(cleaned), uuidLen)
+	}
+
+	if _, err := hex.Decode(uuidBytes[:], []byte(cleaned)); err != nil {
+		return uuidBytes, fmt.Errorf("parse uuid: %w", err)
+	}
+
+	return uuidBytes, nil
 }

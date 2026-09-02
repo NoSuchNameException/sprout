@@ -72,13 +72,17 @@ The project is structured around a modular design, ensuring a clear separation o
 
 ```
 .
-├── cmd/vpn/            # Application entry point (main.go)
+├── cmd/
+│   └── vpn/            # Application entry point (main.go)
 ├── internal/
-│   ├── config/         # Configuration management, CLI parsing, and encryption (crypto.go)
-│   ├── inbound/        # Incoming traffic handling (SOCKS5 server implementation)
-│   ├── outbound/       # Outbound transport and protocols:
-│   │   └── vless/      # VLESS, REALITY, gRPC streams, and custom Protobuf parser
-│   └── relay/          # Relay logic connecting inbound streams to outbound transport
+│   ├── config/         # Configuration management, options, CLI parsing, and crypto
+│   ├── inbound/        # Incoming traffic handling
+│   │   └── socks5/     # SOCKS5 server implementation (socks.go, inbound.go)
+│   ├── outbound/       # Outbound connection management and VLESS/REALITY protocols
+│   │   ├── vless/      # VLESS core logic and dialer helpers
+│   │   │   └── dialer/ # Reality crypto and handshake implementations
+│   ├── relay/          # Relay logic connecting inbound streams to outbound transport
+│   └── transport/      # Unified transport layer (TCP, gRPC adapters, codecs, and headers)
 ├── .github/workflows/  # CI/CD pipelines
 └── build.sh            # Cross-platform build script
 ```

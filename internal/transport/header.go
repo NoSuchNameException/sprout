@@ -1,18 +1,15 @@
-// Package transport provides network transport primitives and protocol header builders.
 package transport
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"log/slog"
 	"net"
 	"strconv"
-	"strings"
 )
 
-// WriteVLESSHeader builds and writes a standard VLESS request header to the connection.
+// writeVLESSHeader builds and writes a standard VLESS request header to the connection.
 // It must be called immediately after establishing the underlying transport connection
 // and before proxying payload data.
 //
@@ -24,7 +21,7 @@ import (
 //   - [2]  Port (BigEndian uint16)
 //   - [1]  Address Type (0x01 IPv4 / 0x02 Domain / 0x03 IPv6)
 //   - [N]  Address Payload (4 bytes for IPv4, 1 + N bytes for Domain, 16 bytes for IPv6)
-func WriteVLESSHeader(conn io.ReadWriteCloser, uuid [16]byte, target string) error {
+func writeVLESSHeader(conn io.ReadWriteCloser, uuid [16]byte, target string) error {
 	host, portStr, err := net.SplitHostPort(target)
 	if err != nil {
 		return fmt.Errorf("split host / port: %w", err)
@@ -66,21 +63,4 @@ func WriteVLESSHeader(conn io.ReadWriteCloser, uuid [16]byte, target string) err
 	}
 
 	return nil
-}
-
-// ParseUUID parses a standard 36-character UUID string (with or without hyphens)
-// into a [16]byte array. Returns an error if the string is not a valid 128-bit hex representation.
-func ParseUUID(uuid string) ([16]byte, error) {
-	var uuidBytes [16]byte
-	cleaned := strings.ReplaceAll(uuid, "-", "")
-
-	if len(cleaned) != 32 {
-		return uuidBytes, fmt.Errorf("parse uuid: invalid length %d (expected 32 hex characters)", len(cleaned))
-	}
-
-	if _, err := hex.Decode(uuidBytes[:], []byte(cleaned)); err != nil {
-		return uuidBytes, fmt.Errorf("parse uuid: %w", err)
-	}
-
-	return uuidBytes, nil
 }

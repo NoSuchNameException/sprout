@@ -1,5 +1,4 @@
-// Package grpc implements gRPC-based transport for outbound proxy connections.
-package grpc
+package transport
 
 import (
 	"fmt"

@@ -1,5 +1,4 @@
-// Package grpc implements gRPC-based transport for outbound proxy connections.
-package grpc
+package transport
 
 import (
 	"context"
@@ -9,24 +8,22 @@ import (
 	"net"
 
 	"github.com/NoSuchNameException/sprout/internal/config"
-	"github.com/NoSuchNameException/sprout/internal/outbound"
-	"github.com/NoSuchNameException/sprout/internal/transport"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var _ outbound.Transport = (*GRPCConn)(nil)
+var _ Transport = (*grpcConn)(nil)
 
-// GRPCConn handles the setup of gRPC-tunneled connections for VLESS outbound traffic.
-type GRPCConn struct {
+// grpcConn handles the setup of gRPC-tunneled connections for VLESS outbound traffic.
+type grpcConn struct {
 	serviceName string
 	uuidBytes   [16]byte
 	address     string
 }
 
-// NewGRPCConn creates a new [GRPCConn] transport instance configured with the provided outbound options.
-func NewGRPCConn(opts *config.OutboundOption) *GRPCConn {
-	return &GRPCConn{
+// newGRPCConn creates a new [grpcConn] transport instance configured with the provided outbound options.
+func newGRPCConn(opts *config.OutboundOption) Transport {
+	return &grpcConn{
 		serviceName: opts.ServiceName,
 		uuidBytes:   opts.UUIDBytes,
 		address:     opts.Address,
@@ -35,7 +32,7 @@ func NewGRPCConn(opts *config.OutboundOption) *GRPCConn {
 
 // HandshakeAndWrap establishes a bidirectional gRPC stream over the provided TLS connection,
 // wraps it in an adapter implementing [io.ReadWriteCloser], and transmits the initial VLESS header.
-func (g *GRPCConn) HandshakeAndWrap(ctx context.Context, tlsUConn net.Conn, target string) (io.ReadWriteCloser, error) {
+func (g *grpcConn) HandshakeAndWrap(ctx context.Context, tlsUConn net.Conn, target string) (io.ReadWriteCloser, error) {
 	grpcStream, cleanup, err := packetStream(ctx, tlsUConn, g.address, g.serviceName)
 	if err != nil {
 		tlsUConn.Close()
@@ -44,7 +41,7 @@ func (g *GRPCConn) HandshakeAndWrap(ctx context.Context, tlsUConn net.Conn, targ
 
 	grpcConn := NewGRPCAdapter(grpcStream, cleanup)
 
-	if err := transport.WriteVLESSHeader(grpcConn, g.uuidBytes, target); err != nil {
+	if err := writeVLESSHeader(grpcConn, g.uuidBytes, target); err != nil {
 		grpcConn.Close()
 		return nil, fmt.Errorf("vless header: %w", err)
 	}

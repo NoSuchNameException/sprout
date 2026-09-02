@@ -1,4 +1,3 @@
-// Package dialer provides network dialers for establishing secure outbound connections.
 package dialer
 
 import (

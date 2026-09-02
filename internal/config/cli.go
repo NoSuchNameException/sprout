@@ -1,4 +1,3 @@
-// Package config provides configuration loading, parsing, and saving from a YAML file.
 package config
 
 import (
@@ -117,8 +116,10 @@ func parseVLESSToOutbound(input string, out *OutboundConfig) error {
 	if q.Get("security") != "reality" {
 		fmt.Println("Warning: This client is optimized for REALITY. Link specifies:", q.Get("security"))
 	}
-	if q.Get("type") != "grpc" {
-		fmt.Println("Warning: This client is optimized for gRPC. Link specifies:", q.Get("type"))
+
+	t := q.Get("type")
+	if t == "" {
+		t = "tcp"
 	}
 
 	out.PublicKey = q.Get("pbk")
@@ -127,7 +128,7 @@ func parseVLESSToOutbound(input string, out *OutboundConfig) error {
 	out.ServerName = q.Get("sni")
 	out.Fingerprint = q.Get("fp")
 	out.ServiceName = q.Get("serviceName")
-	out.Type = q.Get("type")
+	out.Type = t
 	out.Remark = u.Fragment
 
 	return nil
