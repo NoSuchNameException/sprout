@@ -4,17 +4,10 @@ package outbound
 import (
 	"context"
 	"io"
-	"net"
 )
 
 // Outbound orchestrates the dialing and transport wrapping to establish a connection to a target via VPS.
 type Outbound interface {
 	// Connect dials the target address and returns an active connection.
 	Connect(ctx context.Context, target string) (io.ReadWriteCloser, error)
-}
-
-// Dialer establishes the low-level network or TLS connection to the remote server.
-type Dialer interface {
-	// Dial connects to the server and returns a base net.Conn (e.g., after REALITY/uTLS verification).
-	Dial(ctx context.Context) (net.Conn, error)
 }

@@ -113,8 +113,9 @@ func parseVLESSToOutbound(input string, out *OutboundConfig) error {
 
 	q := u.Query()
 
-	if q.Get("security") != "reality" {
-		fmt.Println("Warning: This client is optimized for REALITY. Link specifies:", q.Get("security"))
+	sec := q.Get("security")
+	if sec == "" {
+		sec = "none"
 	}
 
 	t := q.Get("type")
@@ -123,7 +124,7 @@ func parseVLESSToOutbound(input string, out *OutboundConfig) error {
 	}
 
 	out.PublicKey = q.Get("pbk")
-	out.Security = q.Get("security")
+	out.Security = sec
 	out.ShortID = q.Get("sid")
 	out.ServerName = q.Get("sni")
 	out.Fingerprint = q.Get("fp")

@@ -9,10 +9,7 @@ import (
 	"strings"
 )
 
-const (
-	x25519PubKeyLen = 32
-	uuidLen         = 32
-)
+const uuidLen = 32
 
 // OutboundOption holds parsed and validated parameters required to establish outbound connections.
 type OutboundOption struct {
@@ -29,10 +26,6 @@ func ParseOutboundOption(cfg OutboundConfig) (*OutboundOption, error) {
 	serverPub, err := base64.RawURLEncoding.DecodeString(cfg.PublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("invalid public key: %w", err)
-	}
-
-	if len(serverPub) != x25519PubKeyLen {
-		return nil, fmt.Errorf("invalid public key length: expected %d bytes, got %d", x25519PubKeyLen, len(serverPub))
 	}
 
 	shortID, err := hex.DecodeString(cfg.ShortID)

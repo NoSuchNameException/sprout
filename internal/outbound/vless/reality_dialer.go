@@ -1,5 +1,4 @@
-// Package dialer provides network dialers for establishing secure outbound connections.
-package dialer
+package vless
 
 import (
 	"context"
@@ -10,7 +9,6 @@ import (
 	"time"
 
 	"github.com/NoSuchNameException/sprout/internal/config"
-	"github.com/NoSuchNameException/sprout/internal/outbound"
 	utls "github.com/refraction-networking/utls"
 )
 
@@ -33,10 +31,10 @@ const (
 	hkdfInfoReality = "REALITY"
 )
 
-var _ outbound.Dialer = (*Reality)(nil)
+var _ Dialer = (*reality)(nil)
 
-// Reality implements the [outbound.Dialer] interface to perform VLESS+REALITY handshakes over uTLS.
-type Reality struct {
+// reality implements the [outbound.Dialer] interface to perform VLESS+REALITY handshakes over uTLS.
+type reality struct {
 	serverName string
 	serverPub  []byte
 	shortID    []byte
@@ -44,9 +42,9 @@ type Reality struct {
 	address    string
 }
 
-// NewReality creates and initializes a new VLESS+REALITY outbound dialer with the given configuration options.
-func NewReality(opts *config.OutboundOption) *Reality {
-	return &Reality{
+// newReality creates and initializes a new VLESS+REALITY outbound dialer with the given configuration options.
+func newReality(opts *config.OutboundOption) Dialer {
+	return &reality{
 		serverName: opts.ServerName,
 		serverPub:  opts.ServerPub,
 		shortID:    opts.ShortID,
@@ -57,7 +55,7 @@ func NewReality(opts *config.OutboundOption) *Reality {
 
 // Dial establishes a TCP connection to the target server, executes a spoofed TLS 1.3 ClientHello
 // using uTLS (Firefox fingerprint), performs authentication via REALITY ECDHE key exchange, and verifies the response.
-func (r *Reality) Dial(ctx context.Context) (net.Conn, error) {
+func (r *reality) Dial(ctx context.Context) (net.Conn, error) {
 	slog.Debug("[reality] dialing server", "address", r.address, "sni", r.serverName)
 
 	var dialer net.Dialer
@@ -99,7 +97,7 @@ func (r *Reality) Dial(ctx context.Context) (net.Conn, error) {
 
 // prepareSessionID extracts ECDHE keys, constructs the masked REALITY SessionID payload,
 // and returns the derived authKey for certificate verification.
-func (r *Reality) prepareSessionID(state *utls.PubClientHandshakeState) ([]byte, error) {
+func (r *reality) prepareSessionID(state *utls.PubClientHandshakeState) ([]byte, error) {
 	hello := state.Hello
 
 	if len(hello.Raw) < minClientHelloLen {

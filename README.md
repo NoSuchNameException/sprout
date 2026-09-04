@@ -1,23 +1,45 @@
 # Sprout
 
-A lightweight, modular console proxy client written in Go utilizing **VLESS + REALITY** over a **gRPC** transport layer.
+A lightweight, modular console proxy client written in Go utilizing **VLESS + REALITY**.
 
 ## About the Project
 
-This project started as an exploratory attempt to understand how standard proxy clients work under the hood with Xray-core. As development progressed, I decided to minimize external dependencies and generated code by implementing the required protocol components myself, including custom Protobuf parsing, manual gRPC stream handling, and transport integration.
+This project started as an exploratory deep-dive to understand how standard proxy clients work under the hood with Xray-core. As development progressed, I chose to minimize external dependencies and generated code by implementing key protocol components from scratch—including custom Protobuf parsing, manual gRPC stream handling, and transport integration.
 
-This intentional limitation keeps the client lightweight and transparent, while focusing the implementation on core mechanics and protocol internals.
+This intentional constraint keeps the client lightweight and transparent, focusing the implementation entirely on core mechanics and protocol internals.
 
 ## Features
 
-- VLESS + REALITY over gRPC
-- Custom Protobuf parser
-- Manual gRPC stream handling using the standard gRPC API
-- SOCKS5 inbound proxy
-- Encrypted configuration
-- CLI configuration
-- Cross-platform builds for Linux, Windows and macOS
-- GitHub Actions CI/CD
+- **Flexible Architecture:** Modular dialer and transport design (supports TCP and gRPC layers).
+- **Core Protocol:** VLESS + REALITY integration.
+- **Low-Level Implementation:** 
+  - Custom Protobuf parser without heavy code-generation bloat.
+  - Manual stream management using standard grpc primitives instead of generated stubs.
+- **Local Proxy:** Built-in SOCKS5 inbound proxy server.
+- **Hardware-Protected Configs:** Encrypted configuration bound to the local machine via Machine ID.
+- **Developer Experience:** Interactive CLI configuration prompts.
+- **Automation:** Cross-platform builds (Linux, Windows, macOS) powered by GitHub Actions CI/CD.
+
+## Configuration
+
+```yaml
+inbound:
+  listen: 127.0.0.1
+  port: 1080
+
+outbound:
+  address: 203.0.113.42
+  port: 443
+  uuid: Sugxy6pEbqzgzLO8ha3KwQk9zufA6SssrkysQ3KcOraM034WoWAajUqMdgZ2AitB2ic+8jtAyR7wCKcWFmDTdg==
+  public_key: edgM73XpMM42M7SIze+Mdgpe9Drmltw5JbMIAse+AEhATyPuZBrryOP/s6AAIxc2g5I881168mz01Kr0Ow39TRCn5q3bPHc=
+  security: reality
+  short_id: WKMmM44rH9axBz0WaWHe87064ZXE6zEu8gMj4cLdlUQz+JbAse5Rxw==
+  server_name: www.amd.com
+  service_name: grpc-tunnel
+  type: grpc
+  fingerprint: firefox
+  remark: gRPC
+```
 
 ## Design Goals
 
@@ -31,10 +53,11 @@ The project focuses on keeping the implementation small and explicit:
 
 ## Status
 
-The project is currently in early development. The current release provides
-a working VLESS + REALITY client over gRPC with a SOCKS5 inbound interface.
+The project is currently in active development. The current version provides 
+a working VLESS + REALITY client supporting both **TCP** and **gRPC** transport layers, 
+paired with a local SOCKS5 inbound interface.
 
-Planned features include TCP-based connections and a TUN-based interface.
+Planned features include a TUN-based interface for system-wide proxying.
 
 ## Installation & Usage
 
@@ -79,8 +102,7 @@ The project is structured around a modular design, ensuring a clear separation o
 │   ├── inbound/        # Incoming traffic handling
 │   │   └── socks5/     # SOCKS5 server implementation (socks.go, inbound.go)
 │   ├── outbound/       # Outbound connection management and VLESS/REALITY protocols
-│   │   ├── vless/      # VLESS core logic and dialer helpers
-│   │   │   └── dialer/ # Reality crypto and handshake implementations
+│   │   └── vless/      # VLESS core logic, dialers (raw, REALITY), and builders
 │   ├── relay/          # Relay logic connecting inbound streams to outbound transport
 │   └── transport/      # Unified transport layer (TCP, gRPC adapters, codecs, and headers)
 ├── .github/workflows/  # CI/CD pipelines
