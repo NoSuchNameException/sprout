@@ -51,6 +51,38 @@ The project focuses on keeping the implementation small and explicit:
 - configuration encrypted at rest;
 - reproducible cross-platform builds.
 
+## Benchmarks
+
+```bash
+go test -bench=. -benchmem -count=5 ./internal/relay/
+```
+
+```
+goos: darwin
+goarch: amd64
+cpu: Intel(R) Core(TM) i7-1068NG7 CPU @ 2.30GHz
+BenchmarkRelay_Lifecycle-8     48147     25006 ns/op     1310.38 MB/s     3509 B/op     43 allocs/op
+BenchmarkRelay_Stream-8       108914     10817 ns/op     3029.22 MB/s        0 B/op      0 allocs/op
+```
+
+>Note: Both benchmarks use `net.Pipe` — a synchronous in-memory transport. Throughput is CPU-bound, not network-bound.
+
+**Lifecycle** measures a full connection cycle: setup → single packet → teardown.
+43 allocations per operation. Profiling breakdown:
+
+| Source              | Allocations | Notes                        |
+|---------------------|-------------|------------------------------|
+| `net.Pipe` (stdlib) | ~40         | sync primitives, deadlines   |
+| `relay.handle`      | ~3          | WaitGroup, Once, goroutines  |
+| Relay hot path      | 0           | buffers are pool-allocated   |
+
+Relay logic accounts for under 6% of total allocations.
+Remaining 94% are `net.Pipe` internals and are not present in real network I/O.
+
+**Stream** measures sustained throughput on an established connection.
+It achieves zero allocations on the hot path reaching ~3.0 GB/s locally — relay buffers 
+are pool-allocated once per connection, and header parsing utilizes fixed-size stack memory.
+
 ## Status
 
 The project is currently in active development. The current version provides 

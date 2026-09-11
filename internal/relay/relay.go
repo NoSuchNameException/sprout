@@ -11,6 +11,14 @@ import (
 	"github.com/NoSuchNameException/sprout/internal/outbound"
 )
 
+const (
+	responseVersionLen = 1
+	responseAddonLen   = 1
+	maxAddonLen        = 255
+	ResponseHeaderLen  = responseVersionLen + responseAddonLen
+	MaxHeaderLen       = ResponseHeaderLen + maxAddonLen
+)
+
 // Relay bridges an inbound listener and an outbound dialer.
 // Each accepted [inbound.Request] is proxied to its target destination in a separate goroutine.
 type Relay struct {
@@ -112,7 +120,8 @@ func (r *Relay) handle(ctx context.Context, req *inbound.Request) {
 		buf := *bufPtr
 
 		isFirstRecv := true
-		var headerBuf []byte
+		var headerBuf [MaxHeaderLen]byte
+		headerBufLen := 0
 
 		for {
 			n, err := conn.Read(buf)
@@ -120,22 +129,27 @@ func (r *Relay) handle(ctx context.Context, req *inbound.Request) {
 				data := buf[:n]
 
 				if isFirstRecv {
-					headerBuf = append(headerBuf, data...)
+					prevHeaderLen := headerBufLen
 
-					if len(headerBuf) < 2 {
+					n := copy(headerBuf[headerBufLen:], data)
+					headerBufLen += n
+
+					if headerBufLen < ResponseHeaderLen {
 						continue
 					}
 
 					addonLen := int(headerBuf[1])
-					headerLen := 2 + addonLen
+					headerLen := ResponseHeaderLen + addonLen
 
-					if len(headerBuf) < headerLen {
+					if headerBufLen < headerLen {
 						continue
 					}
 
 					isFirstRecv = false
-					data = headerBuf[headerLen:]
-					headerBuf = nil
+					headerBytes := headerLen - prevHeaderLen
+					// data = headerBuf[headerLen:headerBufLen]
+					data = data[headerBytes:]
+					headerBufLen = 0
 				}
 
 				if len(data) > 0 {
