@@ -128,7 +128,7 @@ The project is structured around a modular design, ensuring a clear separation o
 ```
 .
 ├── cmd/
-│   └── vpn/            # Application entry point (main.go)
+│   └── sprout/         # Application entry point (main.go)
 ├── internal/
 │   ├── config/         # Configuration management, options, CLI parsing, and crypto
 │   ├── inbound/        # Incoming traffic handling
